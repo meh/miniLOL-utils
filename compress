@@ -1,0 +1,160 @@
+#! /usr/bin/env ruby
+
+TOOLS = {
+    # You need this: http://code.google.com/closure/compiler/
+    :js => lambda {|file|
+        input  = "#{file}.js"
+        output = "#{file}.min.js"
+
+        if !File.exists?(output) || File.mtime(input) > File.mtime(output)
+            `closure-compiler --js '#{input}' --js_output_file '#{output}'`
+    
+            if $? != 0
+                File.delete(output) rescue nil
+    
+                return false
+            end
+        end
+
+        return output
+    },
+
+    # You need this: http://developer.yahoo.com/yui/compressor/
+    :css  => lambda {|file|
+        input  = "#{file}.css"
+        output = "#{file}.min.css"
+
+        if !File.exists?(output) || File.mtime(input) > File.mtime(output)
+            `yuicompressor -o '#{output}' '#{input}'`
+    
+            if $? != 0
+                File.delete(output) rescue nil
+    
+                return false
+            end
+        end
+
+        return output
+    },
+
+    # You need this: http://sass-lang.com/
+    :scss => lambda {|file|
+        input  = "#{file}.scss"
+        output = "#{file}.css"
+        result = "#{file}.min.css"
+
+        if !File.exists?(result) || File.mtime(input) > File.mtime(result)
+            `sass --scss -t compressed '#{input}' '#{output}'`
+    
+            if $? != 0
+                File.delete(output) rescue nil
+    
+                return false
+            end
+
+            result = TOOLS[:css].call(file)
+
+            File.delete(output)
+
+            if !result
+                return false
+            end
+        end
+
+        return true
+    }
+}
+
+def compress (file, out=nil)
+    if !File.exists?(file)
+        return false
+    end
+
+    match = file.match(/\.([^.]+)$/)
+
+    if !match || !TOOLS[match[1].to_sym]
+        return false
+    end
+
+    extension = match[1].to_sym
+
+    return TOOLS[extension].call(file.sub(/\.([^.]+)$/, ''))
+end
+
+if ARGV.first == '-clean' && ARGV.shift
+    root = Dir.pwd
+
+    ARGV.each {|path|
+        if !File.directory?(path)
+            next
+        end
+
+        Dir.chdir(path)
+
+        Dir.glob('**/**.min.{js,css}').each {|file|
+            puts "Deleting `#{file}`."
+            File.delete(file)
+        }
+
+        Dir.chdir(root)
+    }
+
+    exit
+end
+
+ARGV.each {|target|
+    root = Dir.pwd
+
+    if File.file? target
+        puts "Compressing `#{target}`"
+
+        Dir.chdir(File.dirname(target))
+    
+        if !compress(File.basename(target))
+            puts "Failed to compress `#{target}`"
+            exit
+        end
+    elsif File.directory? target
+        Dir.chdir(target)
+        prev = Dir.pwd
+
+        files = []
+
+        Dir.glob('**/**.*') {|path|
+            name = File.basename(path)
+
+            if name[0] == '_'
+                next
+            end
+
+            if path.match(/\.min\.[^.]*$/)
+                next
+            end
+
+            matches = path.match(/\.([^.]+)$/)
+
+            if !matches
+                next
+            end
+
+            if TOOLS[matches[1].to_sym]
+                files.push(path)
+            end
+        }
+
+        files.each {|file|
+            Dir.chdir(File.dirname(file))
+
+            puts "Compressing `#{file}`"
+    
+            if !compress(File.basename(file))
+                puts "Failed to compress `#{file}`"
+                exit
+            end
+
+            Dir.chdir(prev)
+        }
+    end
+
+    Dir.chdir(root)
+}
