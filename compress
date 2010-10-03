@@ -132,9 +132,7 @@ ARGV.each {|target|
         files = []
 
         Dir.glob('**/**.*') {|path|
-            name = File.basename(path)
-
-            if name[0] == '_'
+            if File.basename(path)[0] == '_'
                 next
             end
 
