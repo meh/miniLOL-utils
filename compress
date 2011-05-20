@@ -13,6 +13,8 @@
 
 TOOLS = {
     # You need this: http://code.google.com/closure/compiler/
+    # I suggest using 20100616 version, because later versions break prototype.js on IE6 so I guess
+    # they break other stuff.
     :js => lambda {|file|
         input  = "#{file}.js"
         output = "#{file}.min.js"
@@ -50,12 +52,71 @@ TOOLS = {
 
     # You need this: http://sass-lang.com/
     :scss => lambda {|file|
+        utils = File.new('/tmp/css3.scss', 'w')
+        utils.write(%{
+          .clear {
+            clear: both;
+          }
+
+          @mixin border-radius ($radius) {
+            -webkit-border-radius: $radius;
+            -moz-border-radius: $radius;
+            border-radius: $radius;
+          }
+
+          @mixin border-top-left-radius ($radius) {
+            -webkit-border-top-left-radius: $radius;
+            -moz-border-radius-topleft: $radius;
+            border-top-left-radius: $radius;
+          }
+
+          @mixin border-top-right-radius ($radius) {
+            -webkit-border-top-right-radius: $radius;
+            -moz-border-radius-topright: $radius;
+            border-top-right-radius: $radius;
+          }
+
+          @mixin border-bottom-left-radius ($radius) {
+            -webkit-border-bottom-left-radius: $radius;
+            -moz-border-radius-bottomleft: $radius;
+            border-bottom-left-radius: $radius;
+          }
+
+          @mixin border-bottom-right-radius ($radius) {
+            -webkit-border-bottom-right-radius: $radius;
+            -moz-border-radius-bottomright: $radius;
+            border-bottom-right-radius: $radius;
+          }
+
+          @mixin box-shadow ($data) {
+            -webkit-box-shadow: $data;
+            -moz-box-shadow: $data;
+            -o-box-shadow: $data;
+            box-shadow: $data;
+          }
+
+          @mixin transition ($data) {
+            -webkit-transition: $data;
+            -moz-transition: $data;
+            -o-transition: $data;
+            transition: $data;
+          }
+
+          @mixin transform ($data) {
+            -webkit-transform: $data;
+            -moz-transform: $data;
+            -o-transform: $data;
+            transform: $data;
+          }
+        })
+        utils.close
+
         input  = "#{file}.scss"
         output = "#{file}.css"
         result = "#{file}.min.css"
 
         if !File.exists?(result) || File.mtime(input) > File.mtime(result)
-            `sass --scss -t compressed '#{input}' '#{output}'`
+            `sass --no-cache --load-path /tmp/ --scss -t compressed '#{input}' '#{output}'`
     
             if $? != 0
                 File.delete(output) rescue nil
@@ -71,6 +132,20 @@ TOOLS = {
                 return false
             end
         end
+
+        return true
+    },
+
+    # Gotta implement this, lol
+    :html => lambda {|file|
+        input  = "#{file}.html"
+        output = "#{file}.min.html"
+
+        data = File.read(input)
+
+        file = File.new(output, 'w')
+        file.write(data)
+        file.close
 
         return true
     }
