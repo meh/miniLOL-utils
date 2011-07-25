@@ -20,7 +20,7 @@ TOOLS = {
         output = "#{file}.min.js"
 
         if !File.exists?(output) || File.mtime(input) > File.mtime(output)
-            `closure-compiler --js '#{input}' --js_output_file '#{output}'`
+            `closure --js '#{input}' --js_output_file '#{output}'`
     
             if $? != 0
                 File.delete(output) rescue nil
@@ -52,71 +52,12 @@ TOOLS = {
 
     # You need this: http://sass-lang.com/
     :scss => lambda {|file|
-        utils = File.new('/tmp/css3.scss', 'w')
-        utils.write(%{
-          .clear {
-            clear: both;
-          }
-
-          @mixin border-radius ($radius) {
-            -webkit-border-radius: $radius;
-            -moz-border-radius: $radius;
-            border-radius: $radius;
-          }
-
-          @mixin border-top-left-radius ($radius) {
-            -webkit-border-top-left-radius: $radius;
-            -moz-border-radius-topleft: $radius;
-            border-top-left-radius: $radius;
-          }
-
-          @mixin border-top-right-radius ($radius) {
-            -webkit-border-top-right-radius: $radius;
-            -moz-border-radius-topright: $radius;
-            border-top-right-radius: $radius;
-          }
-
-          @mixin border-bottom-left-radius ($radius) {
-            -webkit-border-bottom-left-radius: $radius;
-            -moz-border-radius-bottomleft: $radius;
-            border-bottom-left-radius: $radius;
-          }
-
-          @mixin border-bottom-right-radius ($radius) {
-            -webkit-border-bottom-right-radius: $radius;
-            -moz-border-radius-bottomright: $radius;
-            border-bottom-right-radius: $radius;
-          }
-
-          @mixin box-shadow ($data) {
-            -webkit-box-shadow: $data;
-            -moz-box-shadow: $data;
-            -o-box-shadow: $data;
-            box-shadow: $data;
-          }
-
-          @mixin transition ($data) {
-            -webkit-transition: $data;
-            -moz-transition: $data;
-            -o-transition: $data;
-            transition: $data;
-          }
-
-          @mixin transform ($data) {
-            -webkit-transform: $data;
-            -moz-transform: $data;
-            -o-transform: $data;
-            transform: $data;
-          }
-        })
-        utils.close
-
         input  = "#{file}.scss"
         output = "#{file}.css"
         result = "#{file}.min.css"
 
         if !File.exists?(result) || File.mtime(input) > File.mtime(result)
-            `sass --no-cache --load-path /tmp/ --scss -t compressed '#{input}' '#{output}'`
+            `sass --no-cache -r #{File.join(File.dirname($0), 'dependencies', 'bourbon/lib/bourbon.rb')} --load-path #{File.join(File.dirname($0), 'dependencies', 'bourbon')} --scss -t compressed '#{input}' '#{output}'`
     
             if $? != 0
                 File.delete(output) rescue nil
