@@ -8,21 +8,16 @@
   $pos-type: type-of(nth($pos, 1));
 
   // If $pos is missing from mixin, reassign vars and add default position
-  @if $pos-type == color or transparent {
+  @if ($pos-type == color) or (nth($pos, 1) == "transparent")  {
     $G10: $G9; $G9: $G8; $G8: $G7; $G7: $G6; $G6: $G5;
      $G5: $G4; $G4: $G3; $G3: $G2; $G2: $G1; $G1: $pos;
     $pos: top; // Default position
   }
 
-  $full: compact($G1, $G2, $G3, $G4, $G5, $G6, $G7, $G8, $G9, $G10);
+  $type: linear;
+  $gradient: compact($pos, $G1, $G2, $G3, $G4, $G5, $G6, $G7, $G8, $G9, $G10);
+  $type-gradient: append($type, $gradient, comma);
 
-  //If position was included in the mixin/function
-  @if type-of(nth($full, 1)) != color or transparent {
-    @return $full;
-  }
-
-  //Else add the default position
-  @else {
-    @return join($pos, $full, comma);
-  }
+  @return $type-gradient;
 }
+
